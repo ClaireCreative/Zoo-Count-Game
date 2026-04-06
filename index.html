@@ -1,0 +1,1001 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Zoo Count! – Teen Numbers</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;700;900&display=swap');
+
+:root {
+  --blue: #3a7bd5;
+  --blue-light: #e8f0fc;
+  --orange: #f0922b;
+  --orange-light: #fff3e0;
+  --grass: #5dbf47;
+  --grass-dark: #3d9930;
+  --correct: #3dba5e;
+  --wrong: #e84040;
+  --frame-empty: #e8eef8;
+  --frame-border: #c5d5ee;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Nunito', sans-serif;
+  background: linear-gradient(180deg, #87CEEB 0%, #c5e8f7 33%, #5dbf47 33%, #3d9930 100%);
+  min-height: 100vh;
+  overflow-x: hidden;
+  user-select: none;
+  position: relative;
+}
+
+/* ── BG ── */
+.sun { position:fixed; top:12px; right:44px; width:54px; height:54px;
+  background:radial-gradient(circle,#ffe566 60%,#ffb300 100%); border-radius:50%;
+  box-shadow:0 0 30px #ffe56688; pointer-events:none; z-index:1;
+  animation:sun-pulse 3s ease-in-out infinite alternate; }
+@keyframes sun-pulse { 0%{box-shadow:0 0 20px #ffe56688} 100%{box-shadow:0 0 44px #ffe566cc} }
+.cloud { position:fixed; background:#fff; border-radius:50px; opacity:.82; pointer-events:none; animation:drift linear infinite; }
+@keyframes drift { from{transform:translateX(-200px)} to{transform:translateX(110vw)} }
+.tree { position:fixed; font-size:2.2rem; bottom:0; pointer-events:none;
+  animation:sway 4s ease-in-out infinite alternate; transform-origin:bottom center; }
+@keyframes sway { 0%{transform:rotate(-3deg)} 100%{transform:rotate(3deg)} }
+
+/* ── TOP BAR ── */
+.topbar {
+  position:relative; z-index:10; display:flex; align-items:center;
+  justify-content:space-between; padding:8px 14px 4px; flex-wrap:wrap; gap:6px;
+}
+.topbar h1 { font-family:'Fredoka One',cursive; font-size:clamp(1.3rem,4vw,2rem); color:#2d5e00;
+  text-shadow:0 2px 0 rgba(255,255,255,.6); }
+.level-tag { border-radius:20px; padding:4px 14px; font-weight:900; font-size:.85rem; color:#fff; }
+.score-row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; justify-content:center; }
+.pill { background:rgba(255,255,255,.88); border:2px solid #6aac3c; border-radius:20px;
+  padding:3px 14px; font-weight:900; font-size:.9rem; color:#2d5e00; }
+.pill span { color:#e67e00; font-family:'Fredoka One',cursive; }
+
+/* ── PROGRESS DOTS ── */
+.prog-row { display:flex; gap:8px; justify-content:center; padding:3px 0; position:relative; z-index:10; }
+.prog-dot { width:14px; height:14px; border-radius:50%; border:3px solid rgba(255,255,255,.7);
+  background:rgba(255,255,255,.4); transition:all .3s; }
+.prog-dot.done   { background:#3dba5e; border-color:#2d9948; }
+.prog-dot.active { background:#ffe566; border-color:#e6b800; transform:scale(1.35); }
+
+/* ── TIMER ── */
+.timer-wrap { width:min(380px,88vw); margin:0 auto 0; position:relative; z-index:10; display:none; padding:2px 16px 0; }
+.timer-track { background:rgba(0,0,0,.15); border-radius:20px; height:14px; border:2px solid rgba(255,255,255,.5); overflow:hidden; }
+.timer-fill { height:100%; border-radius:20px; transition:width .1s linear, background .3s;
+  background:linear-gradient(90deg,#3dba5e,#ffe566); }
+.timer-lbl { text-align:center; font-weight:900; font-size:.8rem; color:#2d5e00; }
+
+/* ── LEVEL SELECT ── */
+#level-screen {
+  position:fixed; inset:0; z-index:400; display:flex; flex-direction:column;
+  align-items:center; justify-content:center; gap:18px; padding:20px;
+  background:linear-gradient(180deg,#87CEEB 0%,#c5e8f7 33%,#5dbf47 33%,#3d9930 100%);
+}
+#level-screen h1 { font-family:'Fredoka One',cursive; font-size:clamp(2rem,6vw,3rem); color:#2d5e00;
+  text-shadow:0 3px 0 rgba(255,255,255,.6); text-align:center; }
+.lv-cards { display:flex; gap:14px; flex-wrap:wrap; justify-content:center; }
+.lv-card {
+  background:#fff; border-radius:22px; padding:20px 22px; width:min(190px,85vw);
+  cursor:pointer; text-align:center; border:4px solid #ccc; position:relative; overflow:hidden;
+  box-shadow:0 6px 0 #bbb, 0 10px 22px rgba(0,0,0,.14); transition:transform .15s, box-shadow .15s;
+}
+.lv-card:hover { transform:translateY(-5px); box-shadow:0 11px 0 #aaa, 0 16px 26px rgba(0,0,0,.18); }
+.lv-card.c0 { border-color:#3dba5e; } .lv-card.c1 { border-color:#f39c12; } .lv-card.c2 { border-color:#e84040; }
+.lv-card .icon { font-size:2.6rem; display:block; margin-bottom:5px; }
+.lv-card h2 { font-family:'Fredoka One',cursive; font-size:1.35rem; margin-bottom:3px; }
+.lv-card.c0 h2{color:#3dba5e;} .lv-card.c1 h2{color:#f39c12;} .lv-card.c2 h2{color:#e84040;}
+.lv-card p { font-size:.8rem; color:#555; line-height:1.4; }
+.lv-badge { position:absolute; top:9px; right:9px; font-size:.65rem; font-weight:900;
+  text-transform:uppercase; border-radius:14px; padding:2px 9px; color:#fff; }
+.lv-card.c0 .lv-badge{background:#3dba5e;} .lv-card.c1 .lv-badge{background:#f39c12;} .lv-card.c2 .lv-badge{background:#e84040;}
+.lv-stars { margin-top:7px; font-size:1.1rem; min-height:1.3rem; }
+.lock-ov { position:absolute; inset:0; background:rgba(0,0,0,.44); border-radius:18px;
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:5px; }
+.lock-ov span{font-size:2.2rem;} .lock-ov p{color:#fff;font-weight:900;font-size:.82rem;}
+
+/* ── GAME SCREEN ── */
+#game-screen { display:none; }
+
+/* ── QUESTION AREA ── */
+.q-area { display:flex; flex-direction:column; align-items:center; gap:10px;
+  padding:6px 14px 16px; position:relative; z-index:10; }
+
+/* Number bond */
+.bond-wrap { display:flex; flex-direction:column; align-items:center; gap:0; }
+.bond-num { display:flex; align-items:baseline; justify-content:center; line-height:1; }
+.bond-num-blue   { font-family:'Fredoka One',cursive; font-size:clamp(2.8rem,10vw,5rem); color:var(--blue); }
+.bond-num-orange { font-family:'Fredoka One',cursive; font-size:clamp(2.8rem,10vw,5rem); color:var(--orange); }
+/* SVG bond lines */
+.bond-svg { overflow:visible; display:block; margin:0 auto; }
+.bond-row { display:flex; align-items:center; gap:4px; }
+.bond-box {
+  width:46px; height:38px; border-radius:10px; border:2px solid; display:flex;
+  align-items:center; justify-content:center; font-family:'Fredoka One',cursive; font-size:1.3rem;
+  position:relative;
+}
+.bond-box.blue   { border-color:var(--blue);   color:var(--blue);   background:var(--blue-light); }
+.bond-box.orange { border-color:var(--orange);  color:var(--orange); background:var(--orange-light); }
+.bond-box.blank  { border-color:#bbb; color:#bbb; background:#f5f5f5; letter-spacing:0; font-size:1.6rem; }
+
+/* ─── TEN FRAME (Level 1 & 2) ─── */
+.frames-row { display:flex; gap:10px; align-items:flex-start; flex-wrap:wrap; justify-content:center; }
+
+.ten-frame-wrap, .ones-frame-wrap { display:flex; flex-direction:column; align-items:center; gap:3px; }
+.frame-label { font-weight:900; font-size:.75rem; text-transform:uppercase;
+  letter-spacing:.5px; color:#2d5e00; background:rgba(255,255,255,.7);
+  border-radius:10px; padding:2px 10px; }
+
+/* Ten-frame grid: 2 rows × 5 cols */
+.ten-frame {
+  display:grid; grid-template-columns:repeat(5,1fr); gap:4px;
+  background:#fff; border:3px solid var(--blue); border-radius:14px; padding:8px;
+  box-shadow:0 3px 12px rgba(58,123,213,.18);
+}
+.tf-cell {
+  width:clamp(28px,7vw,38px); height:clamp(28px,7vw,38px);
+  border-radius:50%; background:var(--frame-empty); border:2px dashed var(--frame-border);
+  display:flex; align-items:center; justify-content:center; font-size:clamp(1rem,3.5vw,1.5rem);
+  transition:all .25s; cursor:default;
+}
+.tf-cell.filled { background:transparent; border:none; }
+.tf-cell.drop-target { border:2px dashed var(--blue); background:#dce8ff; cursor:pointer; }
+.tf-cell.drop-target:hover { background:#b8d0ff; transform:scale(1.1); }
+
+/* Ones frame: 1 row × 5 cols (for up to 9 ones) — we use 2 rows of 5 */
+.ones-frame {
+  display:grid; grid-template-columns:repeat(5,1fr); gap:4px;
+  background:#fff; border:3px solid var(--orange); border-radius:14px; padding:8px;
+  box-shadow:0 3px 12px rgba(240,146,43,.18);
+}
+.ones-frame .tf-cell.filled { background:transparent; border:none; }
+
+/* ── DRAGGABLE ANIMALS ── */
+.drag-pool { display:flex; gap:8px; flex-wrap:wrap; justify-content:center; }
+.drag-animal {
+  font-size:clamp(1.6rem,5vw,2.2rem); cursor:grab; display:inline-flex;
+  align-items:center; justify-content:center;
+  width:clamp(44px,10vw,56px); height:clamp(44px,10vw,56px);
+  background:rgba(255,255,255,.9); border:3px solid #6aac3c; border-radius:12px;
+  box-shadow:0 3px 8px rgba(0,0,0,.14); transition:transform .15s, box-shadow .15s, opacity .2s;
+  touch-action:none;
+}
+.drag-animal:hover { transform:translateY(-4px) scale(1.1); box-shadow:0 7px 16px rgba(0,0,0,.2); }
+.drag-animal.used  { opacity:.22; pointer-events:none; }
+.drag-animal.dragging { opacity:.3; transform:scale(.92); pointer-events:none; }
+
+/* bus drag-in style */
+.bus-piece {
+  background:#fffbe8; border:3px solid var(--orange); border-radius:14px;
+  padding:8px 12px; cursor:grab; text-align:center; touch-action:none;
+  box-shadow:0 3px 8px rgba(0,0,0,.14); transition:transform .15s, box-shadow .15s, opacity .2s;
+}
+.bus-piece:hover { transform:translateY(-4px) scale(1.06); }
+.bus-piece.used  { opacity:.22; pointer-events:none; }
+.bus-piece.dragging { opacity:.3; pointer-events:none; }
+.bus-grid { display:grid; grid-template-columns:repeat(5,1fr); gap:2px; }
+.bus-lbl { font-weight:900; font-size:.72rem; text-transform:uppercase; color:#9a7000; margin-top:4px; }
+
+/* ── KEEPER + SPEECH ── */
+.keeper-row { display:flex; align-items:center; gap:10px; }
+.keeper { font-size:2rem; animation:keeper-bob 2s ease-in-out infinite alternate; display:inline-block; }
+@keyframes keeper-bob { 0%{transform:translateY(0)} 100%{transform:translateY(-5px)} }
+.keeper.happy { animation:khappy .5s ease; } .keeper.sad { animation:ksad .5s ease; }
+@keyframes khappy { 0%,100%{transform:scale(1)} 50%{transform:scale(1.4) rotate(10deg)} }
+@keyframes ksad   { 0%,100%{transform:rotate(0)} 25%{transform:rotate(-8deg)} 75%{transform:rotate(8deg)} }
+.bubble {
+  background:#fff; border:3px solid #6aac3c; border-radius:14px; padding:5px 13px;
+  font-weight:700; font-size:.88rem; color:#2d5e00; max-width:200px;
+  box-shadow:0 3px 8px rgba(0,0,0,.1); position:relative;
+}
+.bubble::after  {content:'';position:absolute;left:-12px;top:50%;transform:translateY(-50%);border:6px solid transparent;border-right-color:#6aac3c;}
+.bubble::before {content:'';position:absolute;left:-8px;top:50%;transform:translateY(-50%);border:5px solid transparent;border-right-color:#fff;z-index:1;}
+
+/* ── LEVEL 3 CHOICES ── */
+.l3-question { font-family:'Fredoka One',cursive; font-size:clamp(1.6rem,6vw,2.8rem);
+  color:#2d5e00; text-shadow:0 2px 0 rgba(255,255,255,.6); text-align:center; }
+.l3-animal-show { font-size:clamp(1.4rem,4vw,2rem); text-align:center; min-height:40px;
+  background:rgba(255,255,255,.7); border-radius:14px; padding:6px 14px;
+  border:2px solid rgba(255,255,255,.9); }
+.choices-grid { display:flex; gap:12px; flex-wrap:wrap; justify-content:center; width:min(480px,92vw); }
+.choice-btn {
+  background:#fff; border:4px solid #6aac3c; border-radius:18px; padding:16px 10px;
+  cursor:pointer; text-align:center; font-family:'Fredoka One',cursive;
+  color:#2d5e00; box-shadow:0 5px 0 #3d9930, 0 8px 14px rgba(0,0,0,.14);
+  transition:transform .12s, box-shadow .12s; display:flex; flex-direction:column;
+  align-items:center; gap:4px; flex:1; min-width:100px;
+}
+.choice-btn:hover  { transform:translateY(-3px); box-shadow:0 8px 0 #3d9930, 0 12px 20px rgba(0,0,0,.18); }
+.choice-btn:active { transform:translateY(3px);  box-shadow:0 2px 0 #3d9930; }
+.choice-btn.correct-ans { background:#d4f7df; border-color:#3dba5e; animation:choice-pop .4s ease; }
+.choice-btn.wrong-ans   { background:#ffd5d5; border-color:#e84040; animation:choice-sh .3s ease; }
+@keyframes choice-pop { 0%,100%{transform:scale(1)} 50%{transform:scale(1.08)} }
+@keyframes choice-sh  { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-6px)} 75%{transform:translateX(6px)} }
+.choice-num { font-size:1.8rem; }
+.choice-animals { font-size:1.3rem; letter-spacing:1px; }
+
+/* ── CHECK / NEXT BUTTONS ── */
+.btn-row { display:flex; gap:12px; flex-wrap:wrap; justify-content:center; }
+.check-btn {
+  background:linear-gradient(135deg,#ff8c00,#e65c00); color:#fff; border:none;
+  border-radius:50px; padding:11px 36px; font-family:'Fredoka One',cursive; font-size:1.1rem;
+  cursor:pointer; box-shadow:0 5px 0 #aa3a00; transition:transform .12s, box-shadow .12s;
+}
+.check-btn:hover  { transform:translateY(-2px); box-shadow:0 7px 0 #aa3a00; }
+.check-btn:active { transform:translateY(3px);  box-shadow:0 2px 0 #aa3a00; }
+.check-btn:disabled { opacity:.4; cursor:default; transform:none; box-shadow:0 5px 0 #ccc; }
+.next-btn {
+  background:linear-gradient(135deg,#3dba5e,#2d9948); color:#fff; border:none;
+  border-radius:50px; padding:11px 32px; font-family:'Fredoka One',cursive; font-size:1.05rem;
+  cursor:pointer; box-shadow:0 5px 0 #1d6930; display:none; transition:transform .12s;
+}
+.next-btn:hover  { transform:translateY(-2px); }
+.next-btn.show   { display:inline-block; animation:pop-in .35s cubic-bezier(.3,1.6,.5,1); }
+@keyframes pop-in { 0%{transform:scale(.5);opacity:0} 100%{transform:scale(1);opacity:1} }
+.back-btn { position:fixed; top:10px; left:12px; z-index:100; background:rgba(255,255,255,.88);
+  border:2px solid #6aac3c; border-radius:50px; padding:5px 13px; font-weight:900;
+  font-size:.82rem; color:#2d5e00; cursor:pointer; box-shadow:0 2px 8px rgba(0,0,0,.12); }
+.back-btn:hover { transform:scale(1.07); }
+.mute-btn { position:fixed; top:10px; right:12px; z-index:100; background:rgba(255,255,255,.88);
+  border:2px solid #6aac3c; border-radius:50%; width:36px; height:36px; font-size:1.1rem;
+  cursor:pointer; display:flex; align-items:center; justify-content:center; box-shadow:0 2px 8px rgba(0,0,0,.12); }
+
+/* ── FEEDBACK ── */
+.feedback { font-family:'Fredoka One',cursive; font-size:1.2rem; text-align:center;
+  min-height:32px; text-shadow:0 2px 6px rgba(0,0,0,.12); }
+.feedback.correct { color:#1a7a00; } .feedback.wrong { color:#cc2222; }
+
+/* ── CONFETTI ── */
+.conf { position:fixed; pointer-events:none; z-index:999; animation:conf-fall linear forwards; }
+@keyframes conf-fall { 0%{transform:translateY(-20px) rotate(0);opacity:1} 100%{transform:translateY(100vh) rotate(720deg);opacity:0} }
+
+/* ── TOUCH GHOST ── */
+#touch-ghost { position:fixed; z-index:9999; pointer-events:none; display:none;
+  transform:translate(-50%,-50%) scale(1.1); background:rgba(255,255,255,.92);
+  border:3px solid #6aac3c; border-radius:12px; padding:5px; font-size:2rem;
+  box-shadow:0 8px 20px rgba(0,0,0,.25); }
+
+/* ── WIN SCREEN ── */
+#win-screen { display:none; position:fixed; inset:0; background:rgba(0,60,0,.9); z-index:500;
+  flex-direction:column; align-items:center; justify-content:center; text-align:center;
+  gap:14px; padding:20px; }
+#win-screen.show { display:flex; }
+#win-screen h2 { font-family:'Fredoka One',cursive; font-size:clamp(2rem,6vw,3rem); color:#ffe566; text-shadow:0 3px 0 #9a7000; }
+#win-screen p { color:#fff; font-size:1rem; font-weight:700; }
+.win-animals { font-size:2.4rem; }
+.win-stars   { font-size:2rem; }
+.win-btns { display:flex; gap:12px; flex-wrap:wrap; justify-content:center; }
+.win-btn { border:none; border-radius:50px; padding:11px 28px; font-family:'Fredoka One',cursive;
+  font-size:1.05rem; cursor:pointer; transition:transform .15s; }
+.win-btn:hover { transform:scale(1.06); }
+.win-btn.again  { background:linear-gradient(135deg,#ff8c00,#e65c00); color:#fff; box-shadow:0 4px 0 #aa3a00; }
+.win-btn.levels { background:linear-gradient(135deg,#3dba5e,#2d9948); color:#fff; box-shadow:0 4px 0 #1d6930; }
+.win-btn.nextlv { background:linear-gradient(135deg,#9b59b6,#7d3498); color:#fff; box-shadow:0 4px 0 #5a1f7e; }
+
+/* drop zone highlight on ten-frame cells */
+.tf-cell.active-dz { border:2px dashed #3a7bd5; background:#c8daff; animation:dz-pulse .8s ease-in-out infinite alternate; }
+@keyframes dz-pulse { 0%{transform:scale(1)} 100%{transform:scale(1.08)} }
+.ones-frame .tf-cell.active-dz { border-color:var(--orange); background:#ffe0b0; }
+</style>
+</head>
+<body>
+
+<div class="sun"></div>
+<div id="clouds-container"></div>
+<div id="trees-container"></div>
+<div id="touch-ghost"></div>
+
+<!-- ══════ LEVEL SELECT ══════ -->
+<div id="level-screen">
+  <h1>🦁 Zoo Count!</h1>
+  <div class="lv-cards">
+    <div class="lv-card c0" onclick="selectLevel(0)">
+      <span class="icon">🌿</span>
+      <div class="lv-badge">Easy</div>
+      <h2>Jr. Keeper</h2>
+      <p>Drag animals into the ten-frame bus! Number bonds shown.</p>
+      <div class="lv-stars" id="ls0"></div>
+    </div>
+    <div class="lv-card c1" onclick="selectLevel(1)">
+      <span class="icon">🌟</span>
+      <div class="lv-badge">Medium</div>
+      <h2>Animal Expert</h2>
+      <p>Fill the bus one by one — 10 in the bus, rest in the pen!</p>
+      <div class="lv-stars" id="ls1"></div>
+      <div class="lock-ov" id="lk1" style="display:none"><span>🔒</span><p>Beat Easy first!</p></div>
+    </div>
+    <div class="lv-card c2" onclick="selectLevel(2)">
+      <span class="icon">⏱️</span>
+      <div class="lv-badge">Hard</div>
+      <h2>Zoo Master</h2>
+      <p>Read 10+? and pick the right answer from 4 choices!</p>
+      <div class="lv-stars" id="ls2"></div>
+      <div class="lock-ov" id="lk2" style="display:none"><span>🔒</span><p>Beat Medium first!</p></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════ GAME ══════ -->
+<div id="game-screen">
+  <button class="back-btn" onclick="goBack()">← Levels</button>
+  <button class="mute-btn" id="mute-btn" onclick="toggleMute()">🔊</button>
+
+  <div class="topbar">
+    <h1>🦁 Zoo Count!</h1>
+    <div class="score-row">
+      <div class="pill">⭐ <span id="score-val">0</span></div>
+      <div class="pill">Q <span id="q-val">1</span>/5</div>
+      <div class="level-tag" id="lv-tag"></div>
+    </div>
+  </div>
+
+  <div class="prog-row" id="prog-row"></div>
+  <div class="timer-wrap" id="timer-wrap">
+    <div class="timer-track"><div class="timer-fill" id="timer-fill" style="width:100%"></div></div>
+    <div class="timer-lbl" id="timer-lbl">⏱️ 20s</div>
+  </div>
+
+  <div class="q-area" id="q-area">
+    <!-- rendered by JS -->
+  </div>
+</div>
+
+<!-- ══════ WIN ══════ -->
+<div id="win-screen">
+  <div class="win-animals" id="win-animals"></div>
+  <h2 id="win-title">Level Complete!</h2>
+  <div class="win-stars" id="win-stars"></div>
+  <p id="win-msg"></p>
+  <div class="win-btns">
+    <button class="win-btn again"  onclick="replayLevel()">🔄 Again</button>
+    <button class="win-btn levels" onclick="goBack()">🗺️ Levels</button>
+    <button class="win-btn nextlv" id="win-next" onclick="goNextLevel()" style="display:none">➡️ Next Level!</button>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════
+// DATA
+// ═══════════════════════════════════════
+const QUESTIONS = [
+  {num:11,ones:1}, {num:12,ones:2}, {num:13,ones:3}, {num:14,ones:4}, {num:15,ones:5},
+  {num:16,ones:6}, {num:17,ones:7}, {num:18,ones:8}, {num:19,ones:9}
+];
+
+// Each level uses a fresh shuffled subset of 5
+const ZOO_ANIMALS = ['🦁','🐘','🦒','🐆','🦓','🦜','🐧','🦊','🐨'];
+const KEEPERS = ['🧑‍🌾','👩‍🌾','🧑‍🔬','👨‍🏫'];
+const CONF_COLORS = ['#ffe566','#3dba5e','#ff8c00','#e84040','#3db5e8','#c04dd0','#fff'];
+
+const LEVEL_CFG = [
+  { id:0, name:'Jr. Keeper',     tag:'🌿 Easy',   color:'#3dba5e', timer:0  },
+  { id:1, name:'Animal Expert',  tag:'🌟 Medium',  color:'#f39c12', timer:0  },
+  { id:2, name:'Zoo Master',     tag:'⏱️ Hard',    color:'#e84040', timer:20 },
+];
+
+let currentLevel=0, round=0, score=0;
+let unlocked=[true,false,false], bestStars=[0,0,0];
+let roundQuestions=[], roundAnimals=[];
+let muted=false, audioCtx=null;
+let timerIv=null, timeLeft=0;
+
+// Level 1 state
+let l1TenFilled=0, l1OnesFilled=0;
+// Level 2 state
+let l2BusFilled=0, l2OnesPlaced=0;
+
+// drag
+let dragType=null, dragElem=null;
+let touchType=null, touchElem=null;
+
+// ═══════════════════════════════════════
+// AUDIO
+// ═══════════════════════════════════════
+function getAC(){ if(!audioCtx) audioCtx=new(window.AudioContext||window.webkitAudioContext)(); return audioCtx; }
+function playTone(freqs,durs,type='sine'){
+  if(muted)return;
+  try{
+    const ctx=getAC(); let t=ctx.currentTime;
+    freqs.forEach((f,i)=>{
+      const o=ctx.createOscillator(),g=ctx.createGain();
+      o.connect(g);g.connect(ctx.destination);o.type=type;o.frequency.value=f;
+      const d=durs[i]||.15;
+      g.gain.setValueAtTime(.2,t);g.gain.exponentialRampToValueAtTime(.001,t+d);
+      o.start(t);o.stop(t+d+.01);t+=d;
+    });
+  }catch(e){}
+}
+function sndDrop()   { playTone([440,550,660],[.07,.07,.1],'sine'); }
+function sndWrong()  { playTone([300,250,200],[.1,.1,.18],'square'); }
+function sndCorrect(){ playTone([523,659,784,1047],[.09,.09,.09,.22],'sine'); }
+function sndWin()    { playTone([523,659,784,1047,1319,1047,784],[.11,.11,.11,.11,.11,.11,.18],'sine'); }
+function sndTick()   { playTone([880],[.05],'square'); }
+function sndAnimal(q){ playTone([220+q.ones*30, 330+q.ones*20],[.15,.2],'sawtooth'); }
+function toggleMute(){ muted=!muted; document.getElementById('mute-btn').textContent=muted?'🔇':'🔊'; }
+
+// ═══════════════════════════════════════
+// BACKGROUND
+// ═══════════════════════════════════════
+function buildBG(){
+  const cc=document.getElementById('clouds-container');
+  for(let i=0;i<5;i++){
+    const c=document.createElement('div');c.className='cloud';
+    const w=80+Math.random()*100,h=28+Math.random()*20;
+    c.style.cssText=`width:${w}px;height:${h}px;top:${4+Math.random()*20}%;animation-duration:${25+Math.random()*30}s;animation-delay:${-Math.random()*30}s;`;
+    cc.appendChild(c);
+  }
+  const tc=document.getElementById('trees-container');
+  ['🌳','🌲','🌴','🌵'].forEach((e,i)=>{
+    const t=document.createElement('div');t.className='tree';t.textContent=e;
+    t.style.left=[3,7,88,93][i]+'%';t.style.animationDelay=(i*.8)+'s';tc.appendChild(t);
+  });
+}
+
+// ═══════════════════════════════════════
+// LEVEL SELECT
+// ═══════════════════════════════════════
+function showLevelScreen(){
+  document.getElementById('level-screen').style.display='flex';
+  document.getElementById('game-screen').style.display='none';
+  document.getElementById('win-screen').classList.remove('show');
+  stopTimer();
+  [0,1,2].forEach(i=>{
+    document.getElementById('ls'+i).textContent=bestStars[i]>0?'⭐'.repeat(bestStars[i]):'';
+    if(i>0) document.getElementById('lk'+i).style.display=unlocked[i]?'none':'flex';
+  });
+}
+
+function selectLevel(lv){
+  if(!unlocked[lv]){sndWrong();return;}
+  currentLevel=lv; startGame();
+}
+
+// ═══════════════════════════════════════
+// GAME SETUP
+// ═══════════════════════════════════════
+function shuffle(a){return a.map((v,i)=>[Math.random(),i]).sort((a,b)=>a[0]-b[0]).map(v=>a[v[1]]);}
+
+function startGame(){
+  // Pick 5 random questions
+  roundQuestions=shuffle(QUESTIONS).slice(0,5);
+  // Pick one animal per question
+  roundAnimals=shuffle(ZOO_ANIMALS).slice(0,5);
+  round=0; score=0;
+  document.getElementById('level-screen').style.display='none';
+  document.getElementById('game-screen').style.display='block';
+  document.getElementById('win-screen').classList.remove('show');
+  const cfg=LEVEL_CFG[currentLevel];
+  const tag=document.getElementById('lv-tag');
+  tag.textContent=cfg.tag; tag.style.background=cfg.color; tag.style.color='#fff';
+  tag.style.borderRadius='14px'; tag.style.padding='3px 12px';
+  buildProgDots();
+  loadRound();
+}
+
+function buildProgDots(){
+  const row=document.getElementById('prog-row'); row.innerHTML='';
+  for(let i=0;i<5;i++){
+    const d=document.createElement('div');
+    d.className='prog-dot'+(i<round?' done':i===round?' active':'');
+    row.appendChild(d);
+  }
+}
+
+function loadRound(){
+  const q=roundQuestions[round];
+  const animal=roundAnimals[round];
+  document.getElementById('q-val').textContent=round+1;
+  document.getElementById('score-val').textContent=score;
+  document.getElementById('feedback') && clearFeedback();
+  buildProgDots();
+  stopTimer();
+
+  if(currentLevel===0) renderLevel1(q,animal);
+  else if(currentLevel===1) renderLevel2(q,animal);
+  else renderLevel3(q,animal);
+
+  const cfg=LEVEL_CFG[currentLevel];
+  if(cfg.timer>0){ document.getElementById('timer-wrap').style.display='block'; startTimer(cfg.timer); }
+  else document.getElementById('timer-wrap').style.display='none';
+
+  sndAnimal(q);
+}
+
+// ═══════════════════════════════════════
+// TIMER
+// ═══════════════════════════════════════
+function startTimer(s){
+  timeLeft=s; updateTimerUI();
+  timerIv=setInterval(()=>{
+    timeLeft--; updateTimerUI();
+    if(timeLeft<=5&&timeLeft>0) sndTick();
+    if(timeLeft<=0){ clearInterval(timerIv); onTimeout(); }
+  },1000);
+}
+function stopTimer(){ clearInterval(timerIv); timerIv=null; }
+function updateTimerUI(){
+  const cfg=LEVEL_CFG[currentLevel];
+  const pct=Math.max(0,timeLeft/cfg.timer)*100;
+  const f=document.getElementById('timer-fill');
+  f.style.width=pct+'%';
+  f.style.background=pct>50?'linear-gradient(90deg,#3dba5e,#ffe566)':pct>25?'linear-gradient(90deg,#ffe566,#ff8c00)':'linear-gradient(90deg,#ff8c00,#e84040)';
+  document.getElementById('timer-lbl').textContent=`⏱️ ${timeLeft}s`;
+}
+function onTimeout(){
+  showFeedback("⏰ Time's up!",'wrong'); sndWrong(); animateKeeper(false);
+  setTimeout(nextRound,1600);
+}
+
+// helper: build the number bond HTML with SVG lines + two-tone digit
+function buildBond(num, ones, showOnes, blankOnes=false){
+  // Split the number into digits for two-tone coloring
+  const tensDigit = num >= 10 ? Math.floor(num/10) : '';
+  const onesDigit = num % 10;
+  // The bond number: tens digit blue, ones digit orange
+  const numHtml = num >= 10
+    ? `<span class="bond-num-blue">${tensDigit}</span><span class="bond-num-orange">${onesDigit}</span>`
+    : `<span class="bond-num-orange">${num}</span>`;
+
+  // SVG lines from center-bottom of number down to the two boxes
+  // We'll use a simple SVG that draws two diagonal lines
+  const svgLines = `
+    <svg class="bond-svg" width="120" height="36" viewBox="0 0 120 36">
+      <line x1="60" y1="0" x2="28" y2="34" stroke="#555" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="60" y1="0" x2="92" y2="34" stroke="#555" stroke-width="2.5" stroke-linecap="round"/>
+    </svg>`;
+
+  const onesBox = blankOnes
+    ? `<div class="bond-box blank" id="ones-bond">?</div>`
+    : `<div class="bond-box orange">${ones}</div>`;
+
+  return `
+    <div class="bond-wrap">
+      <div class="bond-num">${numHtml}</div>
+      ${svgLines}
+      <div class="bond-row">
+        <div class="bond-box blue">10</div>
+        ${onesBox}
+      </div>
+    </div>`;
+}
+
+// ═══════════════════════════════════════
+// ════ LEVEL 1 — Ten-frame drag ════
+// Bus pre-filled with 10; kids drag only the ones
+// ═══════════════════════════════════════
+function renderLevel1(q,animal){
+  l1TenFilled=10; l1OnesFilled=0; // bus starts full
+  const area=document.getElementById('q-area');
+  area.innerHTML=`
+    <div class="keeper-row">
+      <span class="keeper" id="keeper">${KEEPERS[round%4]}</span>
+      <div class="bubble" id="bubble">Add ${q.ones} more ${animal}s to the pen!</div>
+    </div>
+    ${buildBond(q.num, q.ones, true)}
+    <!-- Frames -->
+    <div class="frames-row">
+      <div class="ten-frame-wrap">
+        <div class="frame-label">🚌 Zoo Bus (full!)</div>
+        <div class="ten-frame" id="ten-frame">
+          ${Array(10).fill(0).map(()=>`<div class="tf-cell filled" style="font-size:clamp(1rem,3.5vw,1.5rem)">${animal}</div>`).join('')}
+        </div>
+      </div>
+      <div class="ones-frame-wrap">
+        <div class="frame-label">🐾 Extra Pen (${q.ones} seats)</div>
+        <div class="ones-frame" id="ones-frame">
+          ${Array(10).fill(0).map((_,i)=>{
+            const active=i<q.ones;
+            return `<div class="tf-cell${active?' active-dz':''}" id="oc${i}" style="${!active?'opacity:.3;pointer-events:none;':''}" ondragover="tfDragOver(event,'ones',${i})" ondragleave="tfDragLeave('ones',${i})" ondrop="tfDrop(event,'ones',${i})"></div>`;
+          }).join('')}
+        </div>
+      </div>
+    </div>
+    <!-- Draggable animals: only q.ones animals to drag -->
+    <div class="drag-pool" id="drag-pool">
+      ${Array(q.ones).fill(0).map((_,i)=>`
+        <div class="drag-animal" id="da${i}" draggable="true"
+          data-idx="${i}"
+          ondragstart="daDragStart(event,${i})">${animal}</div>
+      `).join('')}
+    </div>
+    <div class="feedback" id="feedback"></div>
+    <div class="btn-row">
+      <button class="check-btn" id="check-btn" onclick="checkL1(${q.ones})" disabled>✅ Check!</button>
+      <button class="next-btn" id="next-btn" onclick="nextRound()">Next ➡️</button>
+    </div>
+  `;
+  // Touch on drag animals
+  document.querySelectorAll('.drag-animal').forEach(el=>{
+    el.addEventListener('touchstart',e=>daTouchStart(e,parseInt(el.dataset.idx)),{passive:false});
+  });
+}
+
+// TF drag/drop
+function tfDragOver(e,zone,idx){ e.preventDefault(); }
+function tfDragLeave(zone,idx){}
+function tfDrop(e,zone,idx){
+  e.preventDefault();
+  if(dragType!=='animal'||!dragElem) return;
+  placeAnimalInCell(zone,idx,dragElem);
+  dragElem.classList.remove('dragging'); dragElem=null; dragType=null;
+}
+
+function placeAnimalInCell(zone,idx,elem){
+  const q=roundQuestions[round], animal=roundAnimals[round];
+  const cellId=(zone==='ten'?'tc':'oc')+idx;
+  const cell=document.getElementById(cellId);
+  if(!cell||cell.classList.contains('filled')) return;
+
+  if(zone==='ones' && l1OnesFilled>=q.ones) return;
+
+  cell.textContent=animal;
+  cell.classList.add('filled'); cell.classList.remove('active-dz');
+  cell.style.fontSize='clamp(1rem,3.5vw,1.5rem)';
+  elem.classList.add('used');
+  l1OnesFilled++;
+  sndDrop();
+
+  if(l1OnesFilled===q.ones) document.getElementById('check-btn').disabled=false;
+}
+
+function checkL1(ones){
+  const q=roundQuestions[round];
+  if(l1OnesFilled===ones){
+    sndCorrect(); score+=10; animateKeeper(true);
+    showFeedback(`🎉 YES! 10 + ${ones} = ${q.num}!`,'correct');
+    spawnConfetti(); stopTimer();
+    document.getElementById('check-btn').disabled=true;
+    document.getElementById('next-btn').classList.add('show');
+    document.getElementById('bubble').textContent=`Amazing! ${q.num} animals! 🌟`;
+  } else {
+    sndWrong(); animateKeeper(false);
+    showFeedback(`🤔 Keep counting! Fill all the seats!`,'wrong');
+  }
+}
+
+// Drag animal
+function daDragStart(e,idx){
+  dragType='animal'; dragElem=document.getElementById('da'+idx);
+  setTimeout(()=>dragElem&&dragElem.classList.add('dragging'),0);
+  e.dataTransfer.effectAllowed='move';
+}
+
+// Touch for level 1 animals
+function daTouchStart(e,idx){
+  e.preventDefault();
+  touchType='animal'; touchElem=document.getElementById('da'+idx);
+  if(touchElem.classList.contains('used')) return;
+  const gh=document.getElementById('touch-ghost');
+  gh.textContent=touchElem.textContent; gh.style.display='block';
+  const t=e.touches[0]; gh.style.left=t.clientX+'px'; gh.style.top=t.clientY+'px';
+  touchElem.classList.add('dragging');
+  document.addEventListener('touchmove',l1TouchMove,{passive:false});
+  document.addEventListener('touchend',l1TouchEnd,{passive:false});
+}
+function l1TouchMove(e){
+  e.preventDefault();
+  const t=e.touches[0];
+  const gh=document.getElementById('touch-ghost');
+  gh.style.left=t.clientX+'px'; gh.style.top=t.clientY+'px';
+}
+function l1TouchEnd(e){
+  document.removeEventListener('touchmove',l1TouchMove);
+  document.removeEventListener('touchend',l1TouchEnd);
+  const t=e.changedTouches[0];
+  document.getElementById('touch-ghost').style.display='none';
+  if(touchElem) touchElem.classList.remove('dragging');
+  const el=document.elementFromPoint(t.clientX,t.clientY);
+  if(el){
+    // find cell
+    const cell=el.closest('.tf-cell');
+    if(cell && touchElem){
+      const id=cell.id;
+      let zone='ten',idx=0;
+      if(id.startsWith('oc')){ zone='ones'; idx=parseInt(id.slice(2)); }
+      else if(id.startsWith('tc')){ zone='ten'; idx=parseInt(id.slice(2)); }
+      placeAnimalInCell(zone,idx,touchElem);
+    }
+  }
+  touchElem=null; touchType=null;
+}
+
+// ═══════════════════════════════════════
+// ════ LEVEL 2 — One by one into bus ════
+// Extra animals given so kids must count carefully
+// ═══════════════════════════════════════
+function renderLevel2(q,animal){
+  l2BusFilled=0; l2OnesPlaced=0;
+  const extraCount=q.num+2; // give 2 extra animals as distractors
+  const area=document.getElementById('q-area');
+  area.innerHTML=`
+    <div class="keeper-row">
+      <span class="keeper" id="keeper">${KEEPERS[round%4]}</span>
+      <div class="bubble" id="bubble">Count out ${q.num} ${animal}s! (${extraCount} to choose from)</div>
+    </div>
+    ${buildBond(q.num, q.ones, true, true)}
+    <!-- Ten frame + ones frame -->
+    <div class="frames-row">
+      <div class="ten-frame-wrap">
+        <div class="frame-label">🚌 Zoo Bus (10 seats)</div>
+        <div class="ten-frame" id="ten-frame">
+          ${Array(10).fill(0).map((_,i)=>`<div class="tf-cell" id="tc${i}"></div>`).join('')}
+        </div>
+      </div>
+      <div class="ones-frame-wrap">
+        <div class="frame-label">🐾 Extra Pen</div>
+        <div class="ones-frame" id="ones-frame">
+          ${Array(10).fill(0).map((_,i)=>`<div class="tf-cell" id="oc${i}" style="opacity:.35"></div>`).join('')}
+        </div>
+      </div>
+    </div>
+    <!-- Extra animals pool: q.num + 2 -->
+    <div class="drag-pool" id="drag-pool">
+      ${Array(extraCount).fill(0).map((_,i)=>`
+        <div class="drag-animal" id="da${i}" draggable="true" data-idx="${i}"
+          ondragstart="daDragStart(event,${i})">${animal}</div>
+      `).join('')}
+    </div>
+    <div class="feedback" id="feedback"></div>
+    <div class="btn-row">
+      <button class="check-btn" id="check-btn" onclick="checkL2(${q.ones})" disabled>✅ Check!</button>
+      <button class="next-btn" id="next-btn" onclick="nextRound()">Next ➡️</button>
+    </div>
+  `;
+  highlightNextBusCell();
+  document.querySelectorAll('.drag-animal').forEach(el=>{
+    el.addEventListener('touchstart',e=>daTouchStart(e,parseInt(el.dataset.idx)),{passive:false});
+  });
+  document.removeEventListener('touchend',l1TouchEnd);
+}
+
+function highlightNextBusCell(){
+  // Clear all
+  for(let i=0;i<10;i++){
+    const c=document.getElementById('tc'+i);
+    if(c) c.classList.remove('active-dz');
+  }
+  if(l2BusFilled<10){
+    const next=document.getElementById('tc'+l2BusFilled);
+    if(next) next.classList.add('active-dz');
+    // Set drag over on it
+    next.ondragover=e=>{ e.preventDefault(); };
+    next.ondrop=e=>{ e.preventDefault(); l2DropBus(dragElem); dragElem&&dragElem.classList.remove('dragging'); dragElem=null; };
+  }
+}
+
+function highlightNextOnesCell(q){
+  for(let i=0;i<10;i++){
+    const c=document.getElementById('oc'+i);
+    if(c){ c.classList.remove('active-dz'); c.style.opacity='.35'; c.ondragover=null; c.ondrop=null; }
+  }
+  if(l2OnesPlaced<q.ones){
+    const next=document.getElementById('oc'+l2OnesPlaced);
+    if(next){
+      next.style.opacity='1'; next.classList.add('active-dz');
+      next.ondragover=e=>{ e.preventDefault(); };
+      next.ondrop=e=>{ e.preventDefault(); l2DropOnes(dragElem,q); dragElem&&dragElem.classList.remove('dragging'); dragElem=null; };
+    }
+  }
+}
+
+function l2DropBus(elem){
+  if(!elem||elem.classList.contains('used')) return;
+  if(l2BusFilled>=10) return;
+  const animal=roundAnimals[round];
+  const cell=document.getElementById('tc'+l2BusFilled);
+  cell.textContent=animal; cell.classList.add('filled'); cell.classList.remove('active-dz');
+  cell.style.fontSize='clamp(1rem,3.5vw,1.5rem)';
+  cell.ondragover=null; cell.ondrop=null;
+  elem.classList.add('used');
+  l2BusFilled++; sndDrop();
+  // Update bond box
+  if(l2BusFilled===10){
+    document.getElementById('bubble').textContent='Bus is full! Now fill the extra pen!';
+    // Switch to ones
+    const q=roundQuestions[round];
+    highlightNextOnesCell(q);
+    // rebind touch end for ones
+  } else {
+    highlightNextBusCell();
+  }
+  checkL2Ready();
+}
+
+function l2DropOnes(elem,q){
+  if(!elem||elem.classList.contains('used')) return;
+  if(l2BusFilled<10){ showFeedback('Fill the bus first! 🚌','wrong'); sndWrong(); return; }
+  if(l2OnesPlaced>=q.ones) return;
+  const animal=roundAnimals[round];
+  const cell=document.getElementById('oc'+l2OnesPlaced);
+  cell.textContent=animal; cell.classList.add('filled'); cell.classList.remove('active-dz');
+  cell.style.fontSize='clamp(1rem,3.5vw,1.5rem)'; cell.style.opacity='1';
+  cell.ondragover=null; cell.ondrop=null;
+  elem.classList.add('used');
+  l2OnesPlaced++; sndDrop();
+  // Update ones bond
+  document.getElementById('ones-bond').textContent=l2OnesPlaced;
+  document.getElementById('ones-bond').style.color='var(--orange)';
+  document.getElementById('ones-bond').style.borderColor='var(--orange)';
+  document.getElementById('ones-bond').style.background='var(--orange-light)';
+  highlightNextOnesCell(q);
+  checkL2Ready();
+}
+
+function checkL2Ready(){
+  const q=roundQuestions[round];
+  if(l2BusFilled===10 && l2OnesPlaced===q.ones)
+    document.getElementById('check-btn').disabled=false;
+}
+
+function checkL2(ones){
+  const q=roundQuestions[round];
+  if(l2BusFilled===10 && l2OnesPlaced===ones){
+    sndCorrect(); score+=10; animateKeeper(true);
+    showFeedback(`🎉 YES! 10 + ${ones} = ${q.num}!`,'correct');
+    spawnConfetti(); stopTimer();
+    document.getElementById('check-btn').disabled=true;
+    document.getElementById('next-btn').classList.add('show');
+    document.getElementById('bubble').textContent=`Perfect! ${q.num} ${roundAnimals[round]}s! 🌟`;
+  } else {
+    sndWrong(); animateKeeper(false);
+    showFeedback(`🤔 Keep going! Fill all the seats!`,'wrong');
+  }
+}
+
+// Re-hook level 2 touch
+document.addEventListener('touchend', function l2TouchEnd(e){
+  if(currentLevel!==1) return;
+  document.removeEventListener('touchmove',l1TouchMove);
+  const t=e.changedTouches[0];
+  document.getElementById('touch-ghost').style.display='none';
+  if(touchElem) touchElem.classList.remove('dragging');
+  const q=roundQuestions[round];
+  const el=document.elementFromPoint(t.clientX,t.clientY);
+  if(el && touchElem){
+    const cell=el.closest('.tf-cell');
+    if(cell){
+      const id=cell.id;
+      if(id.startsWith('tc')) l2DropBus(touchElem);
+      else if(id.startsWith('oc')) l2DropOnes(touchElem,q);
+    }
+  }
+  touchElem=null; touchType=null;
+});
+
+// ═══════════════════════════════════════
+// ════ LEVEL 3 — 3-choice number match ════
+// ═══════════════════════════════════════
+function renderLevel3(q,animal){
+  const area=document.getElementById('q-area');
+  // 3 choices: correct + 2 wrong
+  const allNums=[11,12,13,14,15,16,17,18,19].filter(n=>n!==q.num);
+  const wrongs=shuffle(allNums).slice(0,2);
+  const choices=shuffle([q.num,...wrongs]);
+
+  area.innerHTML=`
+    <div class="keeper-row">
+      <span class="keeper" id="keeper">${KEEPERS[round%4]}</span>
+      <div class="bubble" id="bubble">What's the answer?</div>
+    </div>
+    <!-- Equation -->
+    <div class="l3-question">10 + ${q.ones} more = ?</div>
+    <!-- Show animals in frames -->
+    <div style="display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap;justify-content:center;">
+      <div style="text-align:center">
+        <div class="frame-label">🚌 Bus (10)</div>
+        <div class="ten-frame" style="pointer-events:none">
+          ${Array(10).fill(0).map(()=>`<div class="tf-cell filled" style="font-size:clamp(.9rem,3vw,1.35rem)">${animal}</div>`).join('')}
+        </div>
+      </div>
+      <div style="text-align:center">
+        <div class="frame-label">🐾 Extra (${q.ones})</div>
+        <div class="ones-frame" style="pointer-events:none">
+          ${Array(10).fill(0).map((_,i)=>`<div class="tf-cell${i<q.ones?' filled':''}" style="${i<q.ones?`font-size:clamp(.9rem,3vw,1.35rem)`:'opacity:.3'}">${i<q.ones?animal:''}</div>`).join('')}
+        </div>
+      </div>
+    </div>
+    <!-- 3 number-only choices -->
+    <div class="choices-grid">
+      ${choices.map(n=>`
+        <button class="choice-btn" onclick="pickChoice(${n},${q.num},this)">
+          <span class="choice-num" style="font-family:'Fredoka One',cursive;font-size:2.4rem;color:#2d5e00">${n}</span>
+        </button>
+      `).join('')}
+    </div>
+    <div class="feedback" id="feedback"></div>
+    <button class="next-btn" id="next-btn" onclick="nextRound()">Next ➡️</button>
+  `;
+}
+
+function pickChoice(chosen,correct,btn){
+  // Disable all buttons
+  document.querySelectorAll('.choice-btn').forEach(b=>b.disabled=true);
+  stopTimer();
+  if(chosen===correct){
+    btn.classList.add('correct-ans');
+    score+=10; sndCorrect(); animateKeeper(true);
+    showFeedback(`🎉 Correct! 10 + ${correct-10} = ${correct}!`,'correct');
+    spawnConfetti();
+    document.getElementById('next-btn').classList.add('show');
+    document.getElementById('bubble').textContent=`That's right! ${correct}! 🌟`;
+  } else {
+    btn.classList.add('wrong-ans');
+    // Highlight correct
+    document.querySelectorAll('.choice-btn').forEach(b=>{
+      if(parseInt(b.querySelector('.choice-num').textContent)===correct)
+        b.classList.add('correct-ans');
+    });
+    sndWrong(); animateKeeper(false);
+    showFeedback(`Not quite! The answer was ${correct}.`,'wrong');
+    setTimeout(()=>document.getElementById('next-btn').classList.add('show'),1000);
+  }
+}
+
+// ═══════════════════════════════════════
+// NEXT / WIN
+// ═══════════════════════════════════════
+function nextRound(){
+  round++;
+  if(round>=5) showWin();
+  else loadRound();
+}
+
+function showWin(){
+  stopTimer();
+  const pct=score/50;
+  const stars=pct>=0.9?3:pct>=0.6?2:1;
+  if(stars>bestStars[currentLevel]) bestStars[currentLevel]=stars;
+  if(currentLevel<2) unlocked[currentLevel+1]=true;
+
+  const cfg=LEVEL_CFG[currentLevel];
+  document.getElementById('win-animals').textContent=ZOO_ANIMALS.slice(0,5).join('');
+  document.getElementById('win-title').textContent=`🎉 ${cfg.name} Done!`;
+  document.getElementById('win-stars').textContent='⭐'.repeat(stars)+'☆'.repeat(3-stars);
+  document.getElementById('win-msg').textContent=`Score: ${score}/50 pts · ${stars} Star${stars>1?'s':''}!`;
+  const nb=document.getElementById('win-next');
+  if(currentLevel<2){ nb.style.display=''; nb.textContent=`➡️ ${LEVEL_CFG[currentLevel+1].name}!`; }
+  else nb.style.display='none';
+  document.getElementById('win-screen').classList.add('show');
+  sndWin();
+  for(let i=0;i<5;i++) setTimeout(spawnConfetti,i*180);
+}
+
+function replayLevel(){ startGame(); }
+function goBack(){ stopTimer(); showLevelScreen(); }
+function goNextLevel(){ currentLevel++; startGame(); }
+
+// ═══════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════
+function animateKeeper(happy){
+  const k=document.getElementById('keeper');
+  if(!k) return;
+  k.className='keeper '+(happy?'happy':'sad');
+  setTimeout(()=>k.className='keeper',600);
+}
+function showFeedback(msg,type){ const el=document.getElementById('feedback'); if(el){el.textContent=msg;el.className='feedback '+type;} }
+function clearFeedback(){ const el=document.getElementById('feedback'); if(el){el.textContent='';el.className='feedback';} }
+
+function spawnConfetti(){
+  for(let i=0;i<26;i++){
+    const c=document.createElement('div'); c.className='conf';
+    const col=CONF_COLORS[Math.floor(Math.random()*CONF_COLORS.length)];
+    const sz=6+Math.random()*9;
+    c.style.cssText=`left:${10+Math.random()*80}%;top:-20px;width:${sz}px;height:${sz}px;background:${col};border-radius:${Math.random()>.5?'50%':'2px'};animation-duration:${1.2+Math.random()*1.4}s;animation-delay:${Math.random()*.35}s;`;
+    document.body.appendChild(c); setTimeout(()=>c.remove(),2800);
+  }
+}
+
+// drag cleanup
+document.addEventListener('dragend',()=>{ if(dragElem) dragElem.classList.remove('dragging'); dragElem=null; dragType=null; });
+
+// ═══════════════════════════════════════
+buildBG();
+showLevelScreen();
+</script>
+</body>
+</html>
